@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ally's AI Adventure</title>
+    <!-- Tailwind CSS is loaded from a CDN for simplicity -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Import the Inter font for a clean, modern look */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1117;
+            /* Creates a subtle radial gradient effect */
+            background-image: radial-gradient(circle at center, #1a202c, #0d1117 75%);
+            color: #e2e8f0;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: rgba(30, 41, 59, 0.8);
+            /* Adds a blur effect to the background */
+            backdrop-filter: blur(10px);
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+            border: 2px solid rgba(74, 144, 226, 0.3);
+        }
+
+        h1, h2 {
+            font-weight: 700;
+            color: #63b3ed;
+        }
+
+        .cta-button {
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            background-image: linear-gradient(to right, #4a90e2, #5c7cfa);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .result-box {
+            animation: fadeIn 0.5s ease-in-out;
+            border-radius: 1rem;
+            border-left: 5px solid;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        /* Animation for fading in elements */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Loading spinner animation */
+        .loading-animation {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #63b3ed;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Styling for history items */
+        .history-item {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-left: 3px solid;
+        }
+
+        /* Ally's face animation */
+        @keyframes bounce {
+            0%,100% {transform: translateY(0)}
+            50% {transform: translateY(-10px)}
+        }
+        .ally-dance { animation: bounce 0.6s infinite; }
+
+        /* Confetti animation for celebrations */
+        .confetti {
+            position: fixed;
+            width: 10px; height: 10px; border-radius: 50%;
+            top: -10px;
+            animation: fall 2s linear forwards;
+        }
+        @keyframes fall {
+            to { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 flex flex-col items-center">
+
+    <!-- The Tone.js library is loaded from a CDN here to generate sounds. -->
+    <script src="https://unpkg.com/tone@14.7.58/build/Tone.js"></script>
+
+    <!-- Main Container -->
+    <div class="container text-center">
+
+        <!-- Header Section -->
+        <header class="mb-8">
+            <h1 class="text-3xl md:text-5xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Ally Helps Leo!</h1>
+            <p class="text-lg md:text-xl text-gray-400">Can you help Ally understand Leo's birthday messages?</p>
+            <!-- Ally's face element -->
+            <div id="ally-face" class="text-6xl text-center mt-4">🤖</div>
+        </header>
+
+        <!-- Storytelling Section -->
+        <section class="story-section mb-12 text-left bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
+            <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-center text-blue-300">Meet Ally and Leo!</h2>
+            <p class="mb-4 text-gray-300">
+                Hi! My name is Ally 🤖, and my best friend is Leo the Lion 🦁. It's his birthday soon, and he's getting lots of messages. But Leo wants to know how his friends are *feeling* about the party.
+            </p>
+            <p class="mb-4 text-gray-300">
+                Can you help me read the messages and figure out if they're **happy** or **sad**? My circuits look for special **feeling words** to decide. Let's practice together!
+            </p>
+        </section>
+
+        <!-- Quiz Section -->
+        <section class="quiz-section mb-12">
+            <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-center text-blue-300">Quiz Mode! Guess the Feeling! 🤔</h2>
+            <p class="mb-4 text-gray-400">Read the message below and pick the right feeling!</p>
+            
+            <div id="quiz-question-box" class="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg mb-6">
+                <p id="quiz-message" class="text-xl md:text-2xl text-white font-medium italic"></p>
+            </div>
+            
+            <div class="flex flex-wrap justify-center gap-4">
+                <button class="quiz-button quiz-happy bg-green-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-green-700 transition-transform transform">Happy 😀</button>
+                <button class="quiz-button quiz-sad bg-red-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-red-700 transition-transform transform">Sad 😟</button>
+                <button class="quiz-button quiz-neutral bg-gray-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-gray-700 transition-transform transform">Neutral 😐</button>
+            </div>
+            
+            <p id="quiz-result" class="text-lg mt-4 font-bold text-center"></p>
+            <button id="next-question-btn" class="cta-button mt-4 text-white font-bold py-2 px-6 rounded-full shadow-lg hidden">Next Question</button>
+            <div id="scoreboard" class="mt-6 text-lg font-bold text-yellow-400">⭐ Score: <span id="score">0</span></div>
+        </section>
+
+        <!-- Main Interactive Section -->
+        <section class="main-activity-section mb-12">
+            <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-center text-blue-300">Help Ally!</h2>
+            <p class="mb-4 text-gray-400">Type a message below and press "Help Ally!" to see if it's happy, sad, or just a simple message.</p>
+
+            <!-- Text Input and Button -->
+            <div class="flex flex-col items-center">
+                <textarea id="text-input" rows="4" class="w-full max-w-2xl p-4 text-lg border-2 border-gray-600 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500 bg-gray-700 text-white resize-none mb-4" placeholder="Example: I'm so excited for your party!"></textarea>
+                <button id="analyze-button" class="cta-button text-white font-bold py-3 px-8 rounded-full shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-300 transition-transform transform">
+                    Help Ally! 🎉
+                </button>
+            </div>
+        </section>
+
+        <!-- Result Display Section -->
+        <section id="result-container" class="mt-8 hidden">
+            <div id="result-box" class="result-box p-6 rounded-lg text-left">
+                <p id="result-message" class="text-xl font-medium text-white"></p>
+                <p id="ally-response" class="text-lg mt-2 italic text-gray-300"></p>
+                <p id="sentiment-score" class="text-sm mt-2 font-mono text-gray-400"></p>
+            </div>
+        </section>
+
+        <!-- History Section -->
+        <section id="history-section" class="mt-12 w-full max-w-2xl">
+            <h2 class="text-xl md:text-2xl font-semibold mb-4 text-center text-blue-300">My Practice Log</h2>
+            <div id="history-list" class="flex flex-col gap-4">
+                <p id="history-placeholder" class="text-center text-gray-500 italic">Messages you check will appear here!</p>
+            </div>
+        </section>
+    </div>
+
+    <!-- JavaScript for Logic -->
+    <script>
+        const textInput = document.getElementById('text-input');
+        const analyzeButton = document.getElementById('analyze-button');
+        const resultContainer = document.getElementById('result-container');
+        const resultMessage = document.getElementById('result-message');
+        const allyResponse = document.getElementById('ally-response');
+        const sentimentScoreEl = document.getElementById('sentiment-score');
+        const historyList = document.getElementById('history-list');
+        const historyPlaceholder = document.getElementById('history-placeholder');
+        const quizMessageEl = document.getElementById('quiz-message');
+        const quizResultEl = document.getElementById('quiz-result');
+        const nextQuestionBtn = document.getElementById('next-question-btn');
+        const quizButtons = document.querySelectorAll('.quiz-button');
+        const allyFace = document.getElementById('ally-face');
+
+        let score = 0;
+        let audioSynth; // A global variable to hold our sound generator.
+
+        // Initialize Tone.js when the page is loaded to prevent autoplay issues.
+        document.addEventListener('DOMContentLoaded', () => {
+            // A simple Synth to generate tones.
+            audioSynth = new Tone.Synth().toDestination();
+        });
+
+        // The expanded lists of positive and negative words from the previous version.
+        const positiveKeywords = new Set([
+            'happy', 'love', 'great', 'fantastic', 'wonderful', 'joy', 'excited', 
+            'good', 'best', 'amazing', 'fun', 'super', 'awesome', 'brilliant', 
+            'excellent', 'yummy', 'superb', 'lovely', 'delicious', 'beautiful', 
+            'joyful', 'pleased', 'loved', 'enjoyed', 'fabulous', 'gorgeous', 
+            'perfect', 'splendid', 'terrific', 'outstanding', 'incredibly', 
+            'truly', 'talented', 'magical', 'charming', 'delightful', 'inspired'
+        ]);
+        
+        const negativeKeywords = new Set([
+            'sad', 'bad', 'terrible', 'awful', 'angry', 'disappointed', 'hate', 
+            'worst', 'unhappy', 'not good', 'disaster', 'horrible', 'lousy', 
+            'miserable', 'not coming', 'uncomfortable', 'disappointing', 
+            'dreadful', 'unpleasant', 'nasty', 'disgusting', 'loud', 'rude', 
+            'boring', 'frustrating', 'annoying', 'terribly', 'poor', 'weak', 
+            'failed', 'worthless', 'crying', 'depressing', 'dismal', 'gloomy', 
+            'stressful', 'tired'
+        ]);
+
+        // This is the core logic for the sentiment analysis "brain".
+        function analyzeSentiment(text) {
+            function cleanText(input) {
+                // Remove all punctuation and convert to lowercase for consistent analysis.
+                return input.toLowerCase().replace(/[.,!?;:]/g, '');
+            }
+
+            let sentiment = 'Neutral';
+            let emoji = '😐';
+            let explanation = `This message doesn't have words that show a strong feeling.`;
+            let score = 0;
+            let allyMessage = "Hmm, this message seems pretty simple. No strong feelings here!";
+            let foundWords = [];
+
+            const words = cleanText(text).split(/\s+/).filter(word => word.length > 0);
+
+            // Iterate through the words to count positive and negative hits.
+            for (const word of words) {
+                if (positiveKeywords.has(word)) {
+                    score++;
+                    foundWords.push(word);
+                } else if (negativeKeywords.has(word)) {
+                    score--;
+                    foundWords.push(word);
+                }
+            }
+            
+            // Determine the final sentiment based on the score.
+            if (score > 0) {
+                sentiment = 'Happy';
+                emoji = '😀';
+                explanation = `I found happy words like **${foundWords.join(', ')}**. This makes the message happy!`;
+                allyMessage = score > 1 ? "That's a very happy message! Leo will be so excited to read this one!" : "Wow! That sounds amazing! I love hearing happy things.";
+            } else if (score < 0) {
+                sentiment = 'Sad';
+                emoji = '😟';
+                explanation = `I found sad words like **${foundWords.join(', ')}**. This makes the message sad.`;
+                allyMessage = score < -1 ? "Oh no, a sad message. Leo will be sad to hear this news." : "That doesn't sound very good. I hope things get better soon!";
+            }
+            
+            return { sentiment, emoji, explanation, score, allyMessage, foundWords };
+        }
+
+        // Helper function to update the history log with new analysis results.
+        function updateHistory(text, result) {
+            if (historyPlaceholder) {
+                historyPlaceholder.style.display = 'none';
+            }
+
+            let borderColor = '';
+            if (result.sentiment === 'Happy') {
+                borderColor = '#48bb78';
+            } else if (result.sentiment === 'Sad') {
+                borderColor = '#f56565';
+            } else {
+                borderColor = '#a0aec0';
+            }
+
+            const historyItem = document.createElement('div');
+            historyItem.className = `history-item p-4 rounded-md shadow-md text-left transition-all`;
+            historyItem.style.borderColor = borderColor;
+            historyItem.innerHTML = `
+                <p class="font-bold text-gray-200">Message:</p>
+                <p class="italic text-gray-400 break-words">${text}</p>
+                <p class="text-sm mt-2 text-gray-300"><strong>Result:</strong> ${result.sentiment} ${result.emoji} (Score: ${result.score})</p>
+            `;
+
+            historyList.prepend(historyItem);
+            
+            // Limit the history to the last 5 entries.
+            while (historyList.children.length > 5) {
+                historyList.removeChild(historyList.lastChild);
+            }
+        }
+
+        // Helper function to play a sound based on sentiment.
+        async function playSound(type){
+            // Start the audio context if it hasn't been started yet.
+            await Tone.start();
+            if (audioSynth) {
+                const now = Tone.now();
+                if (type === "Happy") {
+                    // Play a C4 note for a happy sound.
+                    audioSynth.triggerAttackRelease("C4", "8n", now);
+                } else if (type === "Sad") {
+                    // Play a lower C#2 note for a sad sound.
+                    audioSynth.triggerAttackRelease("C#2", "8n", now);
+                } else {
+                    // Play an E4 note for a neutral sound.
+                    audioSynth.triggerAttackRelease("E4", "8n", now);
+                }
+            }
+        }
+
+        // Helper function for Ally's face reaction.
+        function allyReact(feeling){
+            if (feeling === "Happy") {
+                allyFace.textContent = "😃"; 
+                allyFace.classList.add("ally-dance");
+            } else if (feeling === "Sad") {
+                allyFace.textContent = "😟"; 
+                allyFace.classList.remove("ally-dance");
+            } else {
+                allyFace.textContent = "😐"; 
+                allyFace.classList.remove("ally-dance");
+            }
+        }
+
+        // Helper function for the confetti effect.
+        function launchConfetti(){
+            for(let i=0; i < 15; i++){
+                const c = document.createElement("div");
+                c.className = "confetti";
+                c.style.left = Math.random() * 100 + "vw";
+                c.style.background = ["#ff4d4d","#ffd11a","#4dff4d","#4da6ff"][Math.floor(Math.random()*4)];
+                document.body.appendChild(c);
+                setTimeout(() => c.remove(), 2000);
+            }
+        }
+
+        // Event listener for the main analysis button.
+        analyzeButton.addEventListener('click', () => {
+            const text = textInput.value.trim();
+            if (text.length > 0) {
+                const originalButtonText = analyzeButton.innerHTML;
+                // Display a loading spinner while processing.
+                analyzeButton.innerHTML = '<div class="loading-animation"></div>';
+                analyzeButton.disabled = true;
+
+                // Simulate a slight delay for better user experience.
+                setTimeout(() => {
+                    const result = analyzeSentiment(text);
+                    const resultBox = document.getElementById('result-box');
+
+                    let colorClass = '';
+                    if (result.sentiment === 'Happy') {
+                        colorClass = 'border-green-500 bg-green-900';
+                        launchConfetti();
+                    } else if (result.sentiment === 'Sad') {
+                        colorClass = 'border-red-500 bg-red-900';
+                    } else {
+                        colorClass = 'border-gray-500 bg-gray-900';
+                    }
+
+                    resultContainer.classList.remove('hidden');
+                    resultBox.className = `result-box p-6 rounded-lg text-left ${colorClass}`;
+                    resultMessage.innerHTML = `
+                        <p class="text-2xl mb-2">${result.emoji} <strong>Feeling:</strong> ${result.sentiment}</p>
+                        <p class="text-lg">${result.explanation}</p>
+                    `;
+                    allyResponse.textContent = result.allyMessage;
+                    sentimentScoreEl.textContent = `Feeling Score: ${result.score}`;
+
+                    // Update Ally's face and play a sound.
+                    allyReact(result.sentiment);
+                    playSound(result.sentiment);
+                    
+                    updateHistory(text, result);
+                    
+                    analyzeButton.innerHTML = originalButtonText;
+                    analyzeButton.disabled = false;
+                }, 1000); 
+            } else {
+                resultContainer.classList.remove('hidden');
+                const resultBox = document.getElementById('result-box');
+                resultBox.className = 'result-box p-6 rounded-lg text-left border-yellow-500 bg-yellow-900';
+                resultMessage.innerHTML = `<p class="text-xl">Please type something first!</p>`;
+                allyResponse.textContent = ""; 
+                sentimentScoreEl.textContent = "";
+            }
+        });
+
+        // Quiz Logic
+        const quizQuestions = [
+            { message: "This cake is yummy!", answer: 'Happy' },
+            { message: "My balloons popped, I'm so disappointed.", answer: 'Sad' },
+            { message: "Leo is a lion.", answer: 'Neutral' },
+            { message: "The party decorations look amazing!", answer: 'Happy' },
+            { message: "I'm so sad I can't come to the party.", answer: 'Sad' },
+            { message: "The message has two words.", answer: 'Neutral' },
+            { message: "This is the best birthday party ever!", answer: 'Happy' },
+            { message: "I hate waiting in line.", answer: 'Sad' }
+        ];
+
+        let currentQuestion = {};
+
+        function startQuiz() {
+            // Pick a random question
+            const randomIndex = Math.floor(Math.random() * quizQuestions.length);
+            currentQuestion = quizQuestions[randomIndex];
+            
+            // Display the question message
+            quizMessageEl.textContent = currentQuestion.message;
+            quizResultEl.textContent = '';
+            nextQuestionBtn.classList.add('hidden');
+            quizButtons.forEach(btn => btn.disabled = false);
+            allyReact("Neutral");
+        }
+
+        // Add event listeners for quiz buttons
+        quizButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const userGuess = button.textContent.split(' ')[0]; // 'Happy', 'Sad', or 'Neutral'
+                // Use the main analyzeSentiment function to get the correct answer
+                const correctAnswer = analyzeSentiment(currentQuestion.message).sentiment;
+                
+                let feedback = '';
+                let textColorClass = '';
+
+                if (userGuess === correctAnswer) {
+                    feedback = `🎉 Correct! The message is **${correctAnswer}**.`;
+                    textColorClass = 'text-green-400';
+                    playSound("Happy");
+                    launchConfetti();
+                    score++;
+                    document.getElementById("score").textContent=score;
+                } else {
+                    feedback = `Oops! Not quite. The correct feeling is **${correctAnswer}**.`;
+                    textColorClass = 'text-red-400';
+                    playSound("Sad");
+                }
+
+                quizResultEl.innerHTML = feedback;
+                quizResultEl.className = `text-lg mt-4 font-bold text-center ${textColorClass}`;
+                nextQuestionBtn.classList.remove('hidden');
+                
+                quizButtons.forEach(btn => btn.disabled = true);
+                allyReact(correctAnswer);
+            });
+        });
+
+        nextQuestionBtn.addEventListener('click', () => {
+            startQuiz();
+        });
+
+        // Start the quiz when the page loads
+        document.addEventListener('DOMContentLoaded', startQuiz);
+    </script>
+</body>
+</html>
